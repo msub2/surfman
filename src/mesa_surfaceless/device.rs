@@ -3,6 +3,7 @@
 use super::connection::{NativeConnectionWrapper, SurfacelessMesaConnection};
 use super::surface::SurfaceDataGuard;
 use crate::base::egl::context::{self, CurrentContextGuard, EGLBackedContext};
+use crate::base::egl::device::EglDevice;
 use crate::base::egl::surface::EGLBackedSurface;
 use crate::context::ContextID;
 use crate::egl::types::EGLint;
@@ -502,5 +503,22 @@ impl SurfacelessMesaDevice {
     #[inline]
     pub fn surface_texture_object(&self, surface_texture: &SurfaceTexture) -> Option<Texture> {
         surface_texture.surfaceless_mesa().ok()?.0.texture_object
+    }
+}
+
+impl EglDevice for Device {
+    type Context = Context;
+
+    fn egl_display(&self) -> *const c_void {
+        self.native_connection.egl_display
+    }
+
+    fn egl_context(&self, context: &Context) -> *const c_void {
+        self.native_context(context).egl_context
+    }
+
+    fn egl_config(&self, context: &Context) -> *const c_void {
+        let descriptor = self.context_descriptor(context);
+        unsafe { descriptor.to_egl_config(self.native_connection.egl_display) }
     }
 }

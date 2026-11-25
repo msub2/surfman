@@ -6,7 +6,7 @@ use crate::egl::Egl;
 use libc::{dlopen, dlsym, RTLD_LAZY};
 use std::ffi::{CStr, CString};
 use std::mem;
-use std::os::raw::c_void;
+use std::os::raw::{c_char, c_void};
 use std::sync::LazyLock;
 #[cfg(target_os = "windows")]
 use winapi::shared::minwindef::HMODULE;
@@ -70,4 +70,21 @@ fn get_proc_address(symbol_name: &str) -> *const c_void {
 
 pub(crate) unsafe fn lookup_egl_extension(name: &CStr) -> *mut c_void {
     EGL_FUNCTIONS.with(|egl| mem::transmute(egl.GetProcAddress(name.as_ptr())))
+}
+
+pub trait EglDevice {
+    type Context;
+
+    fn egl_display(&self) -> *const c_void;
+    fn egl_context(&self, context: &Self::Context) -> *const c_void;
+    fn egl_config(&self, context: &Self::Context) -> *const c_void;
+}
+
+pub unsafe extern "system" fn egl_get_proc_address(
+    name: *const c_char,
+) -> Option<unsafe extern "system" fn()> {
+    EGL_FUNCTIONS.with(|egl| {
+        let proc = egl.GetProcAddress(name);
+        (!proc.is_null()).then(|| std::mem::transmute(proc))
+    })
 }

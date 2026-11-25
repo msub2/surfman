@@ -109,6 +109,8 @@ pub use crate::base::egl::context::EglContextDescriptor;
 #[allow(clippy::all)]
 mod egl {
     use std::os::raw::{c_long, c_void};
+    pub use crate::base::egl::device::EglDevice;
+    pub use crate::base::egl::device::egl_get_proc_address;
     pub type khronos_utime_nanoseconds_t = khronos_uint64_t;
     pub type khronos_uint64_t = u64;
     pub type khronos_ssize_t = c_long;

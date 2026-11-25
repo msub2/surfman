@@ -4,6 +4,7 @@ use super::connection::{NativeConnectionWrapper, X11Connection};
 use super::context::NativeContext;
 use crate::base::egl::{
     context::{self, CurrentContextGuard, EGLBackedContext},
+    device::EglDevice,
     surface::EGLBackedSurface,
 };
 use crate::context::ContextID;
@@ -534,5 +535,22 @@ impl X11Device {
     #[inline]
     pub fn surface_texture_object(&self, surface_texture: &SurfaceTexture) -> Option<Texture> {
         surface_texture.x11().ok()?.0.texture_object
+    }
+}
+
+impl EglDevice for Device {
+    type Context = Context;
+
+    fn egl_display(&self) -> *const c_void {
+        self.native_connection.egl_display
+    }
+
+    fn egl_context(&self, context: &Context) -> *const c_void {
+        self.native_context(context).egl_context
+    }
+
+    fn egl_config(&self, context: &Context) -> *const c_void {
+        let descriptor = self.context_descriptor(context);
+        unsafe { descriptor.to_egl_config(self.native_connection.egl_display) }
     }
 }

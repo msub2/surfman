@@ -1,6 +1,12 @@
 //! A device abstraction that allows the choice of backends dynamically.
 
 use super::connection::Connection;
+<<<<<<< Updated upstream
+=======
+use super::context::{Context, ContextDescriptor};
+use super::surface::{NativeWidget, Surface, SurfaceTexture};
+use crate::base::egl::device::EglDevice;
+>>>>>>> Stashed changes
 use crate::connection::Connection as ConnectionInterface;
 use crate::context::ContextAttributes;
 use crate::device::Device as DeviceInterface;
@@ -221,5 +227,41 @@ where
     #[inline]
     fn surface_texture_object(&self, surface_texture: &SurfaceTexture) -> Option<Texture> {
         Device::surface_texture_object(self, surface_texture)
+    }
+}
+
+impl<Def, Alt> EglDevice for Device<Def, Alt>
+where
+    Def: DeviceInterface + EglDevice<Context = <Def as DeviceInterface>::Context>,
+    Alt: DeviceInterface + EglDevice<Context = <Alt as DeviceInterface>::Context>,
+    Def::Connection: ConnectionInterface<Device = Def>,
+    Alt::Connection: ConnectionInterface<Device = Alt>,
+{
+    type Context = Context<Def, Alt>;
+
+    fn egl_display(&self) -> *const c_void {
+        match *self {
+            Device::Default(ref device) => device.egl_display(),
+            Device::Alternate(ref device) => device.egl_display(),
+        }
+    }
+
+    fn egl_context(&self, context: &Context<Def, Alt>) -> *const c_void {
+        //self.native_context(context).egl_context
+        match (self, context) {
+            (Device::Default(device), Context::Default(context)) => device.egl_context(context),
+            (Device::Alternate(device), Context::Alternate(context)) => {
+                device.egl_context(context)
+            }
+            _ => panic!("Incompatible context!"),
+        }
+    }
+
+    fn egl_config(&self, context: &Context<Def, Alt>) -> *const c_void {
+        match (self, context) {
+            (Device::Default(device), Context::Default(context)) => device.egl_config(context),
+            (Device::Alternate(device), Context::Alternate(context)) => device.egl_config(context),
+            _ => panic!("Incompatible context!"),
+        }
     }
 }
